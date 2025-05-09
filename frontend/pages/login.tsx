@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Layout from '../components/Layout';
+import Head from 'next/head';
+import BackButton from '../components/BackButton';
 
 const Login: React.FC = () => {
   const router = useRouter();
@@ -56,8 +58,15 @@ const Login: React.FC = () => {
 
   return (
     <Layout>
+      <Head>
+        <title>Login - Your Company</title>
+      </Head>
+
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="mb-8">
+            <BackButton />
+          </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Welcome back
           </h2>
