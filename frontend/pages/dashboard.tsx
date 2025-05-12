@@ -7,10 +7,12 @@ const Dashboard: React.FC = () => {
   const [jobDescription, setJobDescription] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
+      setError(null); // Clear any previous errors
     }
   };
 
@@ -18,22 +20,98 @@ const Dashboard: React.FC = () => {
     if (!file || !jobDescription) return;
 
     setIsAnalyzing(true);
+    setError(null);
+
     try {
-      // TODO: Implement resume analysis API call
-      // Mock response for now
+      // First, parse the PDF
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const parseResponse = await fetch('http://localhost:8000/pdf/parse', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!parseResponse.ok) {
+        throw new Error('Failed to parse PDF');
+      }
+
+      const parsedData = await parseResponse.json();
+      const resumeText = parsedData.text;
+
+      // Send to AI analysis endpoint
+      const analysisResponse = await fetch('http://localhost:8000/ai/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resume_text: resumeText,
+          job_description: jobDescription,
+        }),
+      });
+
+      if (!analysisResponse.ok) {
+        throw new Error('Failed to analyze resume');
+      }
+
+      const analysisData = await analysisResponse.json();
+
+      // Generate PDF from tailored text
+      const pdfResponse = await fetch('http://localhost:8000/pdf/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tailored_text: analysisData.tailored_resume,
+          original_pdf_base64: parsedData.original_pdf_base64
+        }),
+      });
+
+      if (!pdfResponse.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      const pdfData = await pdfResponse.json();
+
       setAnalysis({
-        matchScore: 85,
-        suggestions: [
-          'Add more technical skills',
-          'Quantify your achievements',
-          'Include relevant certifications'
-        ]
+        matchScore: analysisData.match_score,
+        suggestions: analysisData.suggestions,
+        parsedText: resumeText,
+        tailoredResume: analysisData.tailored_resume,
+        pdfBase64: pdfData.pdf_base64,
+        pdfFilename: pdfData.filename
       });
     } catch (error) {
       console.error('Analysis failed:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred during analysis');
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const downloadPDF = () => {
+    if (!analysis?.pdfBase64) return;
+
+    // Convert base64 to blob
+    const byteCharacters = atob(analysis.pdfBase64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = analysis.pdfFilename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -54,7 +132,7 @@ const Dashboard: React.FC = () => {
             <h2 className="text-xl font-semibold mb-4">Upload Resume</h2>
             <input
               type="file"
-              accept=".pdf,.doc,.docx"
+              accept=".pdf"
               onChange={handleFileChange}
               className="block w-full text-sm text-gray-500
                 file:mr-4 file:py-2 file:px-4
@@ -63,6 +141,9 @@ const Dashboard: React.FC = () => {
                 file:bg-blue-50 file:text-blue-700
                 hover:file:bg-blue-100"
             />
+            {error && (
+              <p className="mt-2 text-sm text-red-600">{error}</p>
+            )}
           </div>
 
           {/* Job Description Section */}
@@ -93,13 +174,43 @@ const Dashboard: React.FC = () => {
                 <span className="text-lg font-medium">Match Score: </span>
                 <span className="text-2xl font-bold text-blue-600">{analysis.matchScore}%</span>
               </div>
-              <div>
+              <div className="mb-6">
                 <h3 className="font-medium mb-2">Suggestions:</h3>
                 <ul className="list-disc pl-5">
                   {analysis.suggestions.map((suggestion: string, index: number) => (
                     <li key={index} className="text-gray-700">{suggestion}</li>
                   ))}
                 </ul>
+              </div>
+              
+              {/* Download Button */}
+              <div className="mb-6">
+                <button
+                  onClick={downloadPDF}
+                  className="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700"
+                >
+                  Download Tailored Resume (PDF)
+                </button>
+              </div>
+              
+              {/* Parsed Text Section */}
+              <div className="mt-6 border-t pt-6">
+                <h3 className="font-medium mb-2">Original Resume Text:</h3>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
+                    {analysis.parsedText}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Tailored Resume Section */}
+              <div className="mt-6 border-t pt-6">
+                <h3 className="font-medium mb-2">Tailored Resume:</h3>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
+                    {analysis.tailoredResume}
+                  </pre>
+                </div>
               </div>
             </div>
           )}
