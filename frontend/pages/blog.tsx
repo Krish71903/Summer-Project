@@ -30,6 +30,24 @@ const blogPosts = [
     date: "March 10, 2024",
     readTime: "6 min read",
     image: "/blog/skills-2024.jpg"
+  },
+  {
+    id: 4,
+    title: "Networking Strategies for Career Growth",
+    excerpt: "Learn effective networking techniques to build professional relationships and advance your career.",
+    category: "Career Development",
+    date: "March 8, 2024",
+    readTime: "4 min read",
+    image: "/blog/networking.jpg"
+  },
+  {
+    id: 5,
+    title: "Remote Work Best Practices",
+    excerpt: "Discover tips and tools to stay productive and maintain work-life balance while working remotely.",
+    category: "Industry Trends",
+    date: "March 5, 2024",
+    readTime: "6 min read",
+    image: "/blog/remote-work.jpg"
   }
 ];
 
