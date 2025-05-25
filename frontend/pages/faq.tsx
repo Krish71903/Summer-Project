@@ -34,6 +34,18 @@ const faqs = [
   {
     question: 'Do you offer refunds?',
     answer: 'Yes, we offer a 30-day money-back guarantee if you\'re not satisfied with our service. Contact our support team to process your refund request.'
+  },
+  {
+    question: 'How much does the resume analysis service cost?',
+    answer: 'Our basic resume analysis is free. For advanced features and detailed feedback, we offer premium plans starting at $9.99/month. Check our pricing page for more details.'
+  },
+  {
+    question: 'How do I create an account?',
+    answer: 'You can create an account by clicking the "Sign Up" button on our homepage. Follow the prompts to enter your email, create a password, and verify your account.'
+  },
+  {
+    question: 'What should I do if I encounter an error during analysis?',
+    answer: 'If you encounter an error, please try refreshing the page or clearing your browser cache. If the issue persists, contact our support team with details of the error for assistance.'
   }
 ];
 
